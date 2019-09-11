@@ -11,14 +11,33 @@ export default async function getAvailabilities(date) {
     });
   }
 
+  // const events = await knex
+  //   .select("kind", "starts_at", "ends_at", "weekly_recurring")
+  //   .from("events")
+  //   .where(function() {
+  //     this.where("weekly_recurring",true).andWhere("starts_at","<",+date);
+  //   }).orWhere(function(){
+  //     this.where("weekly_recurring",null).andWhere("ends_at",">",+date)
+  //   }).orderBy("weekly_recurring","desc");
+
   const events = await knex
     .select("kind", "starts_at", "ends_at", "weekly_recurring")
     .from("events")
     .where(function() {
-      this.where("weekly_recurring",true).andWhere("starts_at","<",+date);
+      this.where("weekly_recurring",true).andWhere(knex.raw('Cast(((starts_at) - (?))/86400000 As Integer) < ?',[date,7]));
     }).orWhere(function(){
-      this.where("weekly_recurring",null).andWhere("ends_at",">",+date)
+      this.where("weekly_recurring",null)
+      .andWhere(knex.raw('Cast(((starts_at) - (?))/86400000 As Integer) < ?',[date,7]))
+      .andWhere(knex.raw('Cast(((ends_at) - (?))/86400000 As Integer) < ?',[date,7]))
+      .andWhere(knex.raw('Cast(((starts_at) - (?))/86400000 As Integer) >= ?',[date,0]))
+      .andWhere(knex.raw('Cast(((ends_at) - (?))/86400000 As Integer) >= ?',[date,0]));
     }).orderBy("weekly_recurring","desc");
+
+  // knex.raw(` SELECT Cast(((ends_at) - (?))/(86400000) As Integer) FROM events`,[(date).getTime()]).then(function(res){
+  //   console.log("abhi",res,date.getTime());
+  // })
+    
+  //console.log("events",events,date);
   for (const event of events) {
     for (
       let date = moment(event.starts_at);
