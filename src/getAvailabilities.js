@@ -15,9 +15,10 @@ export default async function getAvailabilities(date) {
     .select("kind", "starts_at", "ends_at", "weekly_recurring")
     .from("events")
     .where(function() {
-      this.where("weekly_recurring", true).orWhere("ends_at", ">", +date);
-    });
-
+      this.where("weekly_recurring",true).andWhere("starts_at","<",+date);
+    }).orWhere(function(){
+      this.where("weekly_recurring",null).andWhere("ends_at",">",+date)
+    }).orderBy("weekly_recurring","desc");
   for (const event of events) {
     for (
       let date = moment(event.starts_at);
@@ -34,6 +35,5 @@ export default async function getAvailabilities(date) {
       }
     }
   }
-
   return Array.from(availabilities.values())
 }
